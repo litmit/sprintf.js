@@ -14,7 +14,9 @@
         not_json: /[^j]/,
         text: /^[^\x25]+/,
         modulo: /^\x25{2}/,
-        placeholder: /^\x25(?:([1-9]\d*)\$|\(([^\)]+)\))?(\+)?(0|'[^$])?(-)?(\d+)?(?:\.(\d+))?([b-gijostTuvxX])/,
+        specifier: /^[a-zA-Z]/,
+        embedded_specifier: /^[b-gijostTuvxX]/,
+        placeholder: /^\x25(?:([1-9]\d*)\$|\(([^\)]+)\))?(\+)?(0|'[^$])?(-)?(\d+)?(?:\.(\d+))?([a-zA-Z])/,
         key: /^([a-z_][a-z_\d]*)/i,
         key_access: /^\.([a-z_][a-z_\d]*)/i,
         index_access: /^\[(\d+)\]/,
@@ -31,7 +33,7 @@
     }
 
     function sprintf_format(parse_tree, argv) {
-        var cursor = 1, tree_length = parse_tree.length, arg, output = '', i, k, ph, pad, pad_character, pad_length, is_positive, sign
+        var cursor = 1, tree_length = parse_tree.length, arg, output = '', i, k, ph, is_positive, sign, ext_mod
         for (i = 0; i < tree_length; i++) {
             if (typeof parse_tree[i] === 'string') {
                 output += parse_tree[i]
@@ -54,85 +56,90 @@
                     arg = argv[cursor++]
                 }
 
-                if (re.not_type.test(ph.type) && re.not_primitive.test(ph.type) && arg instanceof Function) {
-                    arg = arg()
-                }
+                ext_mod = sprintf.modules[ph.type]
+                if ( !ext_mod ) {
+                    if (re.not_type.test(ph.type) && re.not_primitive.test(ph.type) && arg instanceof Function) {
+                        arg = arg()
+                    }
 
-                if (re.numeric_arg.test(ph.type) && (typeof arg !== 'number' && isNaN(arg))) {
-                    throw new TypeError(sprintf('[sprintf] expecting number but found %T', arg))
-                }
+                    if (re.numeric_arg.test(ph.type) && (typeof arg !== 'number' && isNaN(arg))) {
+                        throw new TypeError(sprintf('[sprintf] expecting number but found %T', arg))
+                    }
 
-                if (re.number.test(ph.type)) {
-                    is_positive = arg >= 0
-                }
+                    if (re.number.test(ph.type)) {
+                        is_positive = arg >= 0
+                    }
 
-                switch (ph.type) {
-                    case 'b':
-                        arg = parseInt(arg, 10).toString(2)
-                        break
-                    case 'c':
-                        arg = String.fromCharCode(parseInt(arg, 10))
-                        break
-                    case 'd':
-                    case 'i':
-                        arg = parseInt(arg, 10)
-                        break
-                    case 'j':
-                        arg = JSON.stringify(arg, null, ph.width ? parseInt(ph.width) : 0)
-                        break
-                    case 'e':
-                        arg = ph.precision ? parseFloat(arg).toExponential(ph.precision) : parseFloat(arg).toExponential()
-                        break
-                    case 'f':
-                        arg = ph.precision ? parseFloat(arg).toFixed(ph.precision) : parseFloat(arg)
-                        break
-                    case 'g':
-                        arg = ph.precision ? String(Number(arg.toPrecision(ph.precision))) : parseFloat(arg)
-                        break
-                    case 'o':
-                        arg = (parseInt(arg, 10) >>> 0).toString(8)
-                        break
-                    case 's':
-                        arg = String(arg)
-                        arg = (ph.precision ? arg.substring(0, ph.precision) : arg)
-                        break
-                    case 't':
-                        arg = String(!!arg)
-                        arg = (ph.precision ? arg.substring(0, ph.precision) : arg)
-                        break
-                    case 'T':
-                        arg = Object.prototype.toString.call(arg).slice(8, -1).toLowerCase()
-                        arg = (ph.precision ? arg.substring(0, ph.precision) : arg)
-                        break
-                    case 'u':
-                        arg = parseInt(arg, 10) >>> 0
-                        break
-                    case 'v':
-                        arg = arg.valueOf()
-                        arg = (ph.precision ? arg.substring(0, ph.precision) : arg)
-                        break
-                    case 'x':
-                        arg = (parseInt(arg, 10) >>> 0).toString(16)
-                        break
-                    case 'X':
-                        arg = (parseInt(arg, 10) >>> 0).toString(16).toUpperCase()
-                        break
-                }
-                if (re.json.test(ph.type)) {
-                    output += arg
-                }
-                else {
-                    if (re.number.test(ph.type) && (!is_positive || ph.sign)) {
-                        sign = is_positive ? '+' : '-'
-                        arg = arg.toString().replace(re.sign, '')
+                    switch (ph.type) {
+                        case 'b':
+                            arg = parseInt(arg, 10).toString(2)
+                            break
+                        case 'c':
+                            arg = String.fromCharCode(parseInt(arg, 10))
+                            break
+                        case 'd':
+                        case 'i':
+                            arg = parseInt(arg, 10)
+                            break
+                        case 'j':
+                            arg = JSON.stringify(arg, null, ph.width ? parseInt(ph.width) : 0)
+                            break
+                        case 'e':
+                            arg = ph.precision ? parseFloat(arg).toExponential(ph.precision) : parseFloat(arg).toExponential()
+                            break
+                        case 'f':
+                            arg = ph.precision ? parseFloat(arg).toFixed(ph.precision) : parseFloat(arg)
+                            break
+                        case 'g':
+                            arg = ph.precision ? String(Number(arg.toPrecision(ph.precision))) : parseFloat(arg)
+                            break
+                        case 'o':
+                            arg = (parseInt(arg, 10) >>> 0).toString(8)
+                            break
+                        case 's':
+                            arg = String(arg)
+                            arg = (ph.precision ? arg.substring(0, ph.precision) : arg)
+                            break
+                        case 't':
+                            arg = String(!!arg)
+                            arg = (ph.precision ? arg.substring(0, ph.precision) : arg)
+                            break
+                        case 'T':
+                            arg = Object.prototype.toString.call(arg).slice(8, -1).toLowerCase()
+                            arg = (ph.precision ? arg.substring(0, ph.precision) : arg)
+                            break
+                        case 'u':
+                            arg = parseInt(arg, 10) >>> 0
+                            break
+                        case 'v':
+                            arg = arg.valueOf()
+                            arg = (ph.precision ? arg.substring(0, ph.precision) : arg)
+                            break
+                        case 'x':
+                            arg = (parseInt(arg, 10) >>> 0).toString(16)
+                            break
+                        case 'X':
+                            arg = (parseInt(arg, 10) >>> 0).toString(16).toUpperCase()
+                            break
+                    }
+                    if (re.json.test(ph.type)) {
+                        output += arg
                     }
                     else {
-                        sign = ''
+                        if (re.number.test(ph.type) && (!is_positive || ph.sign)) {
+                            sign = is_positive ? '+' : '-'
+                            arg = arg.toString().replace(re.sign, '')
+                        }
+                        else {
+                            sign = ''
+                        }
+                        output += padding(ph, sign, arg)
                     }
-                    pad_character = ph.pad_char ? ph.pad_char === '0' ? '0' : ph.pad_char.charAt(1) : ' '
-                    pad_length = ph.width - (sign + arg).length
-                    pad = ph.width ? (pad_length > 0 ? pad_character.repeat(pad_length) : '') : ''
-                    output += ph.align ? sign + arg + pad : (pad_character === '0' ? sign + pad + arg : pad + sign + arg)
+                }
+                else { // extension module founded
+                   arg = ext_mod(ph, arg)
+                   arg = (ph.precision ? arg.substring(0, ph.precision) : arg)
+                   output += padding(ph, '', arg)
                 }
             }
         }
@@ -183,6 +190,10 @@
                 if (arg_names === 3) {
                     throw new Error('[sprintf] mixing positional and named placeholders is not (yet) supported')
                 }
+                if ( !re.embedded_specifier.test(match[8]) &&
+                     !sprintf.modules[match[8]] ) {
+                   throw new SyntaxError("[sprintf] unknown type specifier")
+                }
 
                 parse_tree.push(
                     {
@@ -204,6 +215,22 @@
             _fmt = _fmt.substring(match[0].length)
         }
         return sprintf_cache[fmt] = parse_tree
+    }
+
+    sprintf.register_extension = function (specifier,f) {
+        if ( !re.specifier.test(specifier) ) {
+           throw new TypeError("[sprintf] invalid specifier")
+        }
+        sprintf.modules[specifier] = f
+    }
+
+    sprintf.modules = Object.create(null)
+
+    function padding(ph, sign, arg) {
+       var pad_character = ph.pad_char ? ph.pad_char === '0' ? '0' : ph.pad_char.charAt(1) : ' '
+       var pad_length = ph.width - (sign + arg).length
+       var pad = ph.width ? (pad_length > 0 ? pad_character.repeat(pad_length) : '') : ''
+       return ph.align ? sign + arg + pad : (pad_character === '0' ? sign + pad + arg : pad + sign + arg)
     }
 
     /**
