@@ -6,7 +6,7 @@ var assert = require("assert"),
     vsprintf = sprintfjs.vsprintf
 
 function should_throw(format,args,err) {
-    assert.throws(function(){ vsprintf(format),args}, err)
+    assert.throws(function(){ vsprintf(format,args)}, err)
 }
 
 // %S or %[U]S - now yields a string in UPPER CASE
