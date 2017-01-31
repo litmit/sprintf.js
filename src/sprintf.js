@@ -14,9 +14,9 @@
         not_json: /[^j]/,
         text: /^[^\x25]+/,
         modulo: /^\x25{2}/,
-        specifier: /^[a-zA-Z]/,
-        embedded_specifier: /^[b-gijostTuvxX]/,
-        placeholder: /^\x25(?:([1-9]\d*)\$|\(([^\)]+)\))?(\+)?(0|'[^$])?(-)?(\d+)?(?:\.(\d+))?([a-zA-Z])/,
+        specifier: /^[a-zA-Z]$/,
+        embedded_specifier: /^[b-gijostTuvxX]$/,
+        placeholder: /^\x25(?:([1-9]\d*)\$|\(([^\)]+)\))?(\+)?(0|'[^$])?(-)?(\d+)?(?:\.(\d+))?(?:\[([^\]]*)\])?([a-zA-Z])/,
         key: /^([a-z_][a-z_\d]*)/i,
         key_access: /^\.([a-z_][a-z_\d]*)/i,
         index_access: /^\[(\d+)\]/,
@@ -33,13 +33,16 @@
     }
 
     function sprintf_format(parse_tree, argv) {
-        var cursor = 1, tree_length = parse_tree.length, arg, output = '', i, k, ph, is_positive, sign, ext_mod
+        var cursor = 1, tree_length = parse_tree.length, arg, output = '', i, k, ph, is_positive, sign,
+            ext_mod, specifier
+
         for (i = 0; i < tree_length; i++) {
             if (typeof parse_tree[i] === 'string') {
                 output += parse_tree[i]
             }
             else if (typeof parse_tree[i] === 'object') {
                 ph = parse_tree[i] // convenience purposes only
+                specifier = ph.type
                 if (ph.keys) { // keyword argument
                     arg = argv[cursor]
                     for (k = 0; k < ph.keys.length; k++) {
@@ -56,21 +59,21 @@
                     arg = argv[cursor++]
                 }
 
-                ext_mod = sprintf.modules[ph.type]
+                ext_mod = sprintf.modules[specifier]
                 if ( !ext_mod ) {
-                    if (re.not_type.test(ph.type) && re.not_primitive.test(ph.type) && arg instanceof Function) {
+                    if (re.not_type.test(specifier) && re.not_primitive.test(specifier) && arg instanceof Function) {
                         arg = arg()
                     }
 
-                    if (re.numeric_arg.test(ph.type) && (typeof arg !== 'number' && isNaN(arg))) {
+                    if (re.numeric_arg.test(specifier) && (typeof arg !== 'number' && isNaN(arg))) {
                         throw new TypeError(sprintf('[sprintf] expecting number but found %T', arg))
                     }
 
-                    if (re.number.test(ph.type)) {
+                    if (re.number.test(specifier)) {
                         is_positive = arg >= 0
                     }
 
-                    switch (ph.type) {
+                    switch (specifier) {
                         case 'b':
                             arg = parseInt(arg, 10).toString(2)
                             break
@@ -122,11 +125,11 @@
                             arg = (parseInt(arg, 10) >>> 0).toString(16).toUpperCase()
                             break
                     }
-                    if (re.json.test(ph.type)) {
+                    if (re.json.test(specifier)) {
                         output += arg
                     }
                     else {
-                        if (re.number.test(ph.type) && (!is_positive || ph.sign)) {
+                        if (re.number.test(specifier) && (!is_positive || ph.sign)) {
                             sign = is_positive ? '+' : '-'
                             arg = arg.toString().replace(re.sign, '')
                         }
@@ -140,6 +143,7 @@
                    arg = ext_mod(ph, arg)
                    arg = (ph.precision ? arg.substring(0, ph.precision) : arg)
                    output += padding(ph, '', arg)
+
                 }
             }
         }
@@ -153,7 +157,7 @@
             return sprintf_cache[fmt]
         }
 
-        var _fmt = fmt, match, parse_tree = [], arg_names = 0
+        var _fmt = fmt, match, parse_tree = [], arg_names = 0, specifier
         while (_fmt) {
             if ((match = re.text.exec(_fmt)) !== null) {
                 parse_tree.push(match[0])
@@ -190,11 +194,11 @@
                 if (arg_names === 3) {
                     throw new Error('[sprintf] mixing positional and named placeholders is not (yet) supported')
                 }
-                if ( !re.embedded_specifier.test(match[8]) &&
-                     !sprintf.modules[match[8]] ) {
-                   throw new SyntaxError("[sprintf] unknown type specifier")
+                specifier = match[9]
+                if ( !re.embedded_specifier.test(specifier) &&
+                     !sprintf.modules[specifier] ) {
+                   throw new SyntaxError(sprintf("[sprintf] unknown type specifier '%s'",specifier))
                 }
-
                 parse_tree.push(
                     {
                         placeholder: match[0],
@@ -205,7 +209,8 @@
                         align:       match[5],
                         width:       match[6],
                         precision:   match[7],
-                        type:        match[8]
+                        format:      match[8],
+                        type:        specifier
                     }
                 )
             }
