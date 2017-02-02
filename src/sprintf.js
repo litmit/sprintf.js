@@ -140,10 +140,9 @@
                     }
                 }
                 else { // extension module founded
-                   arg = ext_mod(ph, arg)
-                   arg = (ph.precision ? arg.substring(0, ph.precision) : arg)
-                   output += padding(ph, '', arg)
-
+                    arg = ext_mod(ph, arg)
+                    arg = (ph.precision ? arg.substring(0, ph.precision) : arg)
+                    output += padding(ph, '', arg)
                 }
             }
         }
@@ -197,7 +196,7 @@
                 specifier = match[9]
                 if ( !re.embedded_specifier.test(specifier) &&
                      !sprintf.modules[specifier] ) {
-                   throw new SyntaxError(sprintf("[sprintf] unknown type specifier '%s'",specifier))
+                    throw new SyntaxError(sprintf("[sprintf] unknown type specifier '%s'",specifier))
                 }
                 parse_tree.push(
                     {
@@ -224,7 +223,7 @@
 
     sprintf.register_extension = function (specifier,f) {
         if ( !re.specifier.test(specifier) ) {
-           throw new TypeError("[sprintf] invalid specifier")
+            throw new TypeError("[sprintf] invalid specifier")
         }
         sprintf.modules[specifier] = f
     }
@@ -232,10 +231,10 @@
     sprintf.modules = Object.create(null)
 
     function padding(ph, sign, arg) {
-       var pad_character = ph.pad_char ? ph.pad_char === '0' ? '0' : ph.pad_char.charAt(1) : ' '
-       var pad_length = ph.width - (sign + arg).length
-       var pad = ph.width ? (pad_length > 0 ? pad_character.repeat(pad_length) : '') : ''
-       return ph.align ? sign + arg + pad : (pad_character === '0' ? sign + pad + arg : pad + sign + arg)
+        var pad_character = ph.pad_char ? ph.pad_char === '0' ? '0' : ph.pad_char.charAt(1) : ' '
+        var pad_length = ph.width - (sign + arg).length
+        var pad = ph.width ? (pad_length > 0 ? pad_character.repeat(pad_length) : '') : ''
+        return ph.align ? sign + arg + pad : (pad_character === '0' ? sign + pad + arg : pad + sign + arg)
     }
 
     /**

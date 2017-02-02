@@ -1,7 +1,7 @@
- 'use strict';
+'use strict';
 
-var assert = require("assert"),
-    sprintfjs = require("../src/sprintf.js"),
+var assert = require('assert'),
+    sprintfjs = require('../src/sprintf.js'),
     sprintf = sprintfjs.sprintf,
     vsprintf = sprintfjs.vsprintf
 
@@ -18,7 +18,7 @@ function should_throw(format,args,err) {
 // %[fU]S - now yields a string with first letter in lower case and others in uPPER CASE
 // %[C]S - now yields a string with first letter in each word in Upper Case
 // %[Cl]S - now yields a string with first letter in each word in Upper Case and others in Lower case
-sprintf.register_extension("S",
+sprintf.register_extension('S',
     function(options,arg) 
     {
         var re_format = /^((Cl?)|(Fl?)|(fU?)|[Ul])?$/

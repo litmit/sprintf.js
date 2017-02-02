@@ -1,12 +1,12 @@
- 'use strict';
+'use strict';
 
-var assert = require("assert"),
-    sprintfjs = require("../src/sprintf.js"),
+var assert = require('assert'),
+    sprintfjs = require('../src/sprintf.js'),
     sprintf = sprintfjs.sprintf,
     vsprintf = sprintfjs.vsprintf
 
 // %S - now yields a string in UPPER CASE
-sprintf.register_extension("S",function(options,arg) {
+sprintf.register_extension('S', function(options,arg) {
    return String(arg).toUpperCase();
 })
 
